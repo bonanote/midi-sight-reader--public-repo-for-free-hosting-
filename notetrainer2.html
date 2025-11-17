@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI Sight Reader - Treble Chromatic</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vexflow/3.0.9/vexflow-min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+        #staff {
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            background: white;
+            transition: background-color 0.3s ease;
+            overflow-x: auto; /* Scroll for long staff */
+        }
+        #status {
+            margin: 10px;
+            font-size: 18px;
+            color: #333;
+        }
+        #ledger {
+            margin: 10px;
+            font-size: 14px;
+            color: #666;
+            text-align: left;
+            max-width: 500px;
+            margin: 10px auto;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        #ledger:empty {
+            display: none;
+        }
+        #sessionDisplay {
+            margin: 10px;
+            font-size: 14px;
+            color: #666;
+            text-align: left;
+            max-width: 500px;
+            margin: 10px auto;
+            background: #f0f8ff;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #007bff;
+        }
+        #sessionDisplay:empty {
+            display: none;
+        }
+        .wrong-entry {
+            display: inline-block;
+            margin-right: 15px;
+            padding: 2px 5px;
+            background: #ffe6e6;
+            border-radius: 3px;
+        }
+        .range-controls {
+            margin: 10px;
+            font-size: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .range-controls label {
+            margin: 0 5px;
+            white-space: nowrap;
+        }
+        .range-controls input[type="number"] {
+            width: 50px;
+            padding: 2px;
+            font-size: 14px;
+        }
+        .range-controls input[type="checkbox"] {
+            margin-left: 2px;
+        }
+        .range-controls select {
+            padding: 2px;
+            font-size: 14px;
+        }
+        .correct-flash {
+            background-color: rgba(0, 255, 0, 0.3) !important;
+        }
+        .wrong-flash {
+            background-color: rgba(255, 0, 0, 0.3) !important;
+        }
+        #stats {
+            margin: 10px;
+            font-size: 16px;
+            color: #333;
+            text-align: center;
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #4caf50;
+        }
+        #timer {
+            margin: 10px;
+            font-size: 16px;
+            color: #333;
+            text-align: center;
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #4caf50;
+        }
+        #noteNameDisplay {
+            font-size: 24px;
+            margin: 10px;
+            font-weight: bold;
+            color: #333;
+            display: none;
+        }
+        #midiSelector {
+            margin: 10px;
+            display: none;
+            background: #f0f8ff;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #007bff;
+        }
+        #midiSelector select, #midiSelector button {
+            margin: 5px;
+            padding: 5px;
+        }
+        #showSessionStats {
+            margin: 10px;
+            padding: 5px 10px;
+        }
+        #resetSessionBtn {
+            margin: 10px;
+            padding: 5px 10px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #resetSessionBtn:hover {
+            background-color: #cc0000;
+        }
+    </style>
+</head>
+<body>
+    <h1>MIDI Sight Reader</h1>
+    <p>Connect your MIDI keyboard and play the highlighted note on the staff!</p>
+    <div id="status">Loading VexFlow...</div>
+    <div class="range-controls">
+        <label for="minPitch">Min MIDI: <input type="number" id="minPitch" value="53" min="0" max="127" step="1"></label>
+        <label for="maxPitch">Max MIDI: <input type="number" id="maxPitch" value="88" min="0" max="127" step="1"></label>
+        <label for="setSize">Set Size: <input type="number" id="setSize" value="20" min="6" max="30" step="1"></label>
+        <label for="maxJump">Max Jump: <input type="number" id="maxJump" value="5" min="1" max="18" step="1"></label>
+        <label for="useSharps">Sharps: <input type="checkbox" id="useSharps" checked></label>
+        <label for="useFlats">Flats: <input type="checkbox" id="useFlats" checked></label>
+        <label for="onlyAccidentals">Only Acc.: <input type="checkbox" id="onlyAccidentals"></label>
+        <label for="showNoteName">Note Name: <input type="checkbox" id="showNoteName" checked></label>
+        <label for="enableSound">Sound: <input type="checkbox" id="enableSound"></label>
+        <label for="waveform">Wave: <select id="waveform">
+            <option value="sine">Sine</option>
+            <option value="square">Square</option>
+            <option value="sawtooth">Sawtooth</option>
+            <option value="triangle">Triangle</option>
+        </select></label>
+    </div>
+    <div id="stats"></div>
+    <div id="timer"></div>
+    <div id="noteNameDisplay"></div>
+    <div id="ledger"></div>
+    <button id="showSessionStats">Show Session Stats</button>
+    <button id="resetSessionBtn">Reset Session</button>
+    <div id="sessionDisplay"></div>
+    <div id="midiSelector">
+        <p>Select MIDI Input:</p>
+        <select id="midiSelect"></select>
+        <button id="useSelectedBtn">Use Selected Input</button>
+    </div>
+    <button id="connectBtn">Connect MIDI</button>
+    <div id="staff"></div>
+
+    <script>
+        let VF = null; // Global VF - will be set after load check
+        let audioCtx = null; // Web Audio Context
+        let midiAccess = null;
+        let inputPort = null;
+        let isRunning = false; // Track if app is active
+        let currentSet = []; // Array of {pitch, noteInfo} objects
+        let currentIndex = 0; // Index of next note to play
+        let lastPitch = null; // Track last pitch to avoid repeats
+        let wrongCounts = new Map(); // Track bias {pitch: {pitch, count, noteName}}
+        let totalWrongsPerNote = new Map(); // Track total historical wrongs {pitch: count}
+        let noteDisplays = new Map(); // Track displays {pitch: count}
+        let noteCorrects = new Map(); // Track correct plays {pitch: count}
+        let totalCorrect = 0; // Total correct plays
+        let totalWrongs = 0; // Total wrong plays
+        let noteCount = 0; // Total notes played correctly (for timing)
+        let totalTime = 0; // Cumulative time in ms
+        let currentStartTime = null; // Start time for current note
+        let currentError = false; // Flag for temporary error state on current note
+        let pendingAdvance = false; // Flag to wait for note-off after correct note-on
+        let minPitch = 53;
+        let maxPitch = 88;
+        let setSize = 20;
+        let maxJump = 5;
+        let useSharps = true;
+        let useFlats = true;
+        let onlyAccidentals = false;
+        let showNoteName = true;
+        let enableSound = false;
+        let waveform = 'sine';
+        const BIAS_FACTOR = 3; // How much to bias towards wrong notes
+
+        // Weighted random selection
+        function weightedRandom(items, weights) {
+            const total = weights.reduce((a, b) => a + b, 0);
+            let r = Math.random() * total;
+            for (let i = 0; i < items.length; i++) {
+                r -= weights[i];
+                if (r <= 0) return items[i];
+            }
+            return items[items.length - 1]; // Fallback
+        }
+
+        // Update session stats display
+        function updateSessionDisplay() {
+            const displayDiv = document.getElementById('sessionDisplay');
+            const allNotes = new Set([...noteDisplays.keys(), ...noteCorrects.keys()]);
+            if (allNotes.size === 0) {
+                displayDiv.innerHTML = '';
+                return;
+            }
+            let html = '<strong>Session Stats:</strong> ' + 
+                Array.from(allNotes).sort((a, b) => a - b).map(pitch => {
+                    const disp = noteDisplays.get(pitch) || 0;
+                    const corr = noteCorrects.get(pitch) || 0;
+                    const noteInfo = getNoteInfo(pitch);
+                    const noteName = noteInfo.displayName.replace(/\/\d+$/, '');
+                    return `<span class="wrong-entry">${noteName} ${pitch}: Displayed ${disp}, Correct ${corr}</span>`;
+                }).join(' | ');
+            displayDiv.innerHTML = html;
+        }
+
+        // Reset session function
+        function resetSession() {
+            wrongCounts.clear();
+            totalWrongsPerNote.clear();
+            noteDisplays.clear();
+            noteCorrects.clear();
+            totalCorrect = 0;
+            totalWrongs = 0;
+            noteCount = 0;
+            totalTime = 0;
+            lastPitch = null;
+            currentError = false;
+            pendingAdvance = false;
+            currentSet = [];
+            currentIndex = 0;
+            document.getElementById('staff').innerHTML = '';
+            updateLedger();
+            updateStats();
+            updateTimer();
+            updateNoteNameDisplay();
+            document.getElementById('sessionDisplay').innerHTML = '';
+            if (isRunning) {
+                document.getElementById('status').textContent = 'Session reset. New set generated.';
+                generateNewSet();
+            } else {
+                document.getElementById('status').textContent = 'Session reset. Click "Connect MIDI" to start a new session.';
+            }
+            console.log('Session reset.');
+        }
+
+        // Initialize Web Audio
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Play a note sound
+        function playNote(pitch, duration = 0.5, type = 'sine', volume = 0.3) {
+            if (!enableSound) return;
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(440 * Math.pow(2, (pitch - 69) / 12), audioCtx.currentTime);
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.type = type;
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // Update note name display
+        function updateNoteNameDisplay() {
+            const display = document.getElementById('noteNameDisplay');
+            if (showNoteName && currentSet.length > 0 && currentIndex < currentSet.length) {
+                display.textContent = currentSet[currentIndex].noteInfo.displayName;
+                display.style.display = 'block';
+            } else {
+                display.style.display = 'none';
+            }
+        }
+
+        // Debug: Check if VexFlow loaded and set VF globally
+        window.addEventListener('load', () => {
+            if (typeof Vex === 'undefined') {
+                document.getElementById('status').textContent = 'Error: VexFlow failed to load. Check internet or script src.';
+                console.error('VexFlow not found');
+                return;
+            }
+            VF = Vex.Flow;
+            console.log('VexFlow loaded successfully, VF set.'); // Debug
+
+            // Set up waveform selector
+            document.getElementById('waveform').addEventListener('change', (e) => {
+                waveform = e.target.value;
+            });
+
+            // Set up enable sound checkbox
+            document.getElementById('enableSound').addEventListener('change', (e) => {
+                enableSound = e.target.checked;
+            });
+
+            // Set up note name checkbox
+            document.getElementById('showNoteName').addEventListener('change', (e) => {
+                showNoteName = e.target.checked;
+                updateNoteNameDisplay();
+            });
+
+            // Set up session stats button
+            document.getElementById('showSessionStats').addEventListener('click', () => {
+                updateSessionDisplay();
+            });
+
+            // Set up reset session button
+            document.getElementById('resetSessionBtn').addEventListener('click', () => {
+                resetSession();
+            });
+
+            // Set up range input listeners - regenerate set if running
+            document.getElementById('minPitch').addEventListener('change', (e) => {
+                minPitch = parseInt(e.target.value) || 53;
+                if (minPitch > maxPitch) maxPitch = minPitch;
+                e.target.value = minPitch;
+                if (isRunning) {
+                    generateNewSet(); // Regenerate on change
+                }
+            });
+            document.getElementById('maxPitch').addEventListener('change', (e) => {
+                maxPitch = parseInt(e.target.value) || 88;
+                if (maxPitch < minPitch) minPitch = maxPitch;
+                e.target.value = maxPitch;
+                if (isRunning) {
+                    generateNewSet(); // Regenerate on change
+                }
+            });
+            document.getElementById('setSize').addEventListener('change', (e) => {
+                setSize = parseInt(e.target.value) || 20;
+                if (setSize < 6) setSize = 6;
+                if (setSize > 30) setSize = 30;
+                e.target.value = setSize;
+                if (isRunning) {
+                    generateNewSet(); // Regenerate on change
+                }
+            });
+
+            // Set up maxJump input listener
+            document.getElementById('maxJump').addEventListener('change', (e) => {
+                maxJump = parseInt(e.target.value) || 5;
+                if (maxJump < 1) maxJump = 1;
+                if (maxJump > 18) maxJump = 18;
+                e.target.value = maxJump;
+                if (isRunning) {
+                    generateNewSet(); // Regenerate on change
+                }
+            });
+
+            // Set up sharp/flat checkboxes
+            document.getElementById('useSharps').addEventListener('change', (e) => {
+                useSharps = e.target.checked;
+                if (isRunning) {
+                    generateNewSet();
+                }
+            });
+            document.getElementById('useFlats').addEventListener('change', (e) => {
+                useFlats = e.target.checked;
+                if (isRunning) {
+                    generateNewSet();
+                }
+            });
+
+            // Set up only accidentals checkbox
+            document.getElementById('onlyAccidentals').addEventListener('change', (e) => {
+                onlyAccidentals = e.target.checked;
+                if (isRunning) {
+                    generateNewSet();
+                }
+            });
+
+            // Set up MIDI selector button
+            document.getElementById('useSelectedBtn').addEventListener('click', () => {
+                const select = document.getElementById('midiSelect');
+                const selectedId = select.value;
+                if (selectedId && midiAccess) {
+                    inputPort = midiAccess.inputs.get(selectedId);
+                    if (inputPort) {
+                        console.log('Selected input:', inputPort.name); // Debug
+                        inputPort.onmidimessage = onMIDIMessage;
+                        document.getElementById('status').textContent = `MIDI Connected via "${inputPort.name || 'Unknown'}! Generating set...`;
+                        document.getElementById('connectBtn').textContent = 'Reconnect MIDI';
+                        document.getElementById('connectBtn').style.display = 'block'; // Show reconnect
+                        // Reset and start
+                        wrongCounts.clear();
+                        totalWrongsPerNote.clear();
+                        noteDisplays.clear();
+                        noteCorrects.clear();
+                        totalCorrect = 0;
+                        totalWrongs = 0;
+                        noteCount = 0;
+                        totalTime = 0;
+                        lastPitch = null;
+                        currentError = false;
+                        pendingAdvance = false;
+                        isRunning = true;
+                        updateLedger();
+                        updateStats();
+                        updateTimer();
+                        updateNoteNameDisplay();
+                        generateNewSet();
+                        // Hide selector
+                        document.getElementById('midiSelector').style.display = 'none';
+                    } else {
+                        document.getElementById('status').textContent = 'Invalid selection.';
+                    }
+                }
+            });
+
+            document.getElementById('status').textContent = 'Ready. Click "Connect MIDI" to begin. (Open Console for debug logs)';
+            document.getElementById('connectBtn').style.display = 'block';
+        });
+
+        // Function to get note info from MIDI pitch with sharp/flat based on settings
+        function getNoteInfo(pitch) {
+            const octave = Math.floor(pitch / 12) - 1;
+            const semitone = pitch % 12;
+
+            let base, accidental = null, displayName;
+
+            // Natural notes
+            const naturalSemis = [0, 2, 4, 5, 7, 9, 11];
+            const naturalBases = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
+
+            if (naturalSemis.includes(semitone)) {
+                const idx = naturalSemis.indexOf(semitone);
+                base = naturalBases[idx];
+                displayName = base.toUpperCase() + '/' + octave;
+            } else {
+                // Chromatic (black keys) - sharp/flat based on settings
+                const blackKeys = {
+                    1: {sharp: {base: 'c', acc: '#', display: 'c#'}, flat: {base: 'd', acc: 'b', display: 'db'}},
+                    3: {sharp: {base: 'd', acc: '#', display: 'd#'}, flat: {base: 'e', acc: 'b', display: 'eb'}},
+                    6: {sharp: {base: 'f', acc: '#', display: 'f#'}, flat: {base: 'g', acc: 'b', display: 'gb'}},
+                    8: {sharp: {base: 'g', acc: '#', display: 'g#'}, flat: {base: 'a', acc: 'b', display: 'ab'}},
+                    10: {sharp: {base: 'a', acc: '#', display: 'a#'}, flat: {base: 'b', acc: 'b', display: 'bb'}}
+                };
+                let choice;
+                if (useSharps && useFlats) {
+                    choice = Math.random() < 0.5 ? 'sharp' : 'flat';
+                } else if (useSharps) {
+                    choice = 'sharp';
+                } else if (useFlats) {
+                    choice = 'flat';
+                } else {
+                    // Fallback, shouldn't occur
+                    choice = 'sharp';
+                }
+                const selected = blackKeys[semitone][choice];
+                base = selected.base;
+                accidental = selected.acc;
+                displayName = base.toUpperCase() + accidental + '/' + octave;
+            }
+
+            const baseKey = base + '/' + octave;
+            return {baseKey, accidental, displayName};
+        }
+
+        // Function to draw the staff and all notes in current set on a continuous line, highlighting current, dimming played
+        function drawSet() {
+            if (!VF || currentSet.length === 0) {
+                console.error('VF or set not ready.');
+                return;
+            }
+            const div = document.getElementById('staff');
+            div.innerHTML = ''; // Clear previous
+            // Clear any flash classes
+            div.classList.remove('correct-flash', 'wrong-flash');
+
+            const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
+            const noteWidth = 40;
+            const totalWidth = setSize * noteWidth + 350; // Increased extra padding for the end to fully cover the last note
+            renderer.resize(totalWidth + 150, 300); // Full width for continuous staff with margin
+            const context = renderer.getContext();
+            context.setBackgroundFillStyle('#eed');
+
+            // Single continuous stave for all notes
+            const stave = new VF.Stave(10, 40, totalWidth);
+            stave.addClef('treble').addTimeSignature('4/4');
+            stave.setContext(context).draw();
+
+            const notes = []; // All notes
+            currentSet.forEach((setItem, idx) => {
+                const noteInfo = setItem.noteInfo; // Use pre-computed, fixed notation
+                const note = new VF.StaveNote({
+                    clef: 'treble',
+                    keys: [noteInfo.baseKey],
+                    duration: 'q'
+                });
+                if (noteInfo.accidental) {
+                    note.addAccidental(0, new VF.Accidental(noteInfo.accidental));
+                }
+                // Style: played correct (green), current (black or red if error, green if pending advance), future (grey)
+                if (idx < currentIndex) {
+                    // Played correct: green
+                    note.setStyle({ fillStyle: '#00ff00', strokeStyle: '#00ff00' });
+                } else if (idx === currentIndex) {
+                    // Current: black normally, red if error, green if pending advance
+                    if (pendingAdvance) {
+                        note.setStyle({ fillStyle: '#00ff00', strokeStyle: '#00ff00' });
+                    } else if (currentError) {
+                        note.setStyle({ fillStyle: '#ff0000', strokeStyle: '#ff0000' });
+                    } else {
+                        note.setStyle({ fillStyle: '#000000', strokeStyle: '#000000' });
+                    }
+                } else {
+                    // Future: grey
+                    note.setStyle({ fillStyle: '#808080', strokeStyle: '#808080' });
+                }
+                notes.push(note);
+            });
+
+            // Single voice for all
+            const voice = new VF.Voice({ num_beats: setSize, beat_value: 4 });
+            notes.forEach(n => voice.addTickable(n));
+            new VF.Formatter().joinVoices([voice]).format([voice], totalWidth);
+            voice.draw(context, stave);
+        }
+
+        // Function to flash the staff
+        function flashStaff(correct) {
+            const staffDiv = document.getElementById('staff');
+            const className = correct ? 'correct-flash' : 'wrong-flash';
+            staffDiv.classList.add(className);
+            setTimeout(() => {
+                staffDiv.classList.remove(className);
+            }, 300);
+        }
+
+        // Handle note-off for advancing after correct
+        function handleNoteOff(pitch) {
+            if (pendingAdvance && currentSet.length > 0 && pitch === currentSet[currentIndex].pitch) {
+                pendingAdvance = false;
+                currentIndex++; // Advance to next
+                currentError = false;
+                drawSet(); // Update display (previous now green, next highlighted)
+                updateNoteNameDisplay();
+                if (currentIndex < setSize) {
+                    playNote(currentSet[currentIndex].pitch, 0.8, waveform);
+                    currentStartTime = Date.now(); // Reset timer for next
+                } else {
+                    setTimeout(generateNewSet, 500); // New set after brief pause
+                }
+                console.log('Note released, advancing to next index:', currentIndex);
+            }
+        }
+
+        // Function to update the wrong notes ledger display
+        function updateLedger() {
+            const ledgerDiv = document.getElementById('ledger');
+            if (totalWrongsPerNote.size === 0) {
+                ledgerDiv.innerHTML = '';
+                return;
+            }
+            // Sort by count descending, then pitch
+            const sortedWrongs = Array.from(totalWrongsPerNote.entries())
+                .map(([pitch, count]) => {
+                    const noteInfo = getNoteInfo(pitch);
+                    const noteName = noteInfo.displayName.replace(/\/\d+$/, '');
+                    return {noteName, pitch, count};
+                })
+                .sort((a, b) => b.count - a.count || a.pitch - b.pitch);
+            ledgerDiv.innerHTML = '<strong>Notes Missed:</strong> ' + 
+                sortedWrongs.map(entry => 
+                    `<span class="wrong-entry">${entry.noteName} ${entry.pitch} missed ${entry.count}x</span>`
+                ).join(' | ');
+        }
+
+        // Function to update stats display
+        function updateStats() {
+            const totalPlayed = totalCorrect + totalWrongs;
+            const percentage = totalPlayed > 0 ? Math.round((totalWrongs / totalPlayed) * 100) : 0;
+            document.getElementById('stats').textContent = `Notes Played: ${totalPlayed} | Wrongs: ${totalWrongs} (${percentage}%)`;
+        }
+
+        // Function to update timer display
+        function updateTimer() {
+            const avgTime = noteCount > 0 ? (totalTime / noteCount / 1000).toFixed(2) : '0.00';
+            document.getElementById('timer').textContent = `Avg Time per Note: ${avgTime} seconds`;
+        }
+
+        // Generate new set of notes with limited jumps, biased towards error-prone notes
+        function generateNewSet() {
+            currentSet = [];
+            const naturalSemis = [0, 2, 4, 5, 7, 9, 11];
+            const accidentalSemis = [1, 3, 6, 8, 10];
+            let allowedSemis;
+            if (onlyAccidentals) {
+                allowedSemis = (useSharps || useFlats) ? accidentalSemis : [];
+            } else {
+                allowedSemis = naturalSemis.slice();
+                if (useSharps || useFlats) {
+                    allowedSemis = allowedSemis.concat(accidentalSemis);
+                }
+            }
+            let allowedPitches = [];
+            for (let p = minPitch; p <= maxPitch; p++) {
+                if (allowedSemis.includes(p % 12)) {
+                    allowedPitches.push(p);
+                }
+            }
+            if (allowedPitches.length === 0) {
+                console.error('No allowed pitches! Check your settings (e.g., Only Accidentals requires Sharps or Flats enabled).');
+                document.getElementById('status').textContent = 'No valid notes available with current settings. Adjust and regenerate.';
+                return;
+            }
+            // Select first pitch with bias
+            let firstPitch;
+            if (allowedPitches.length === 1) {
+                firstPitch = allowedPitches[0];
+            } else {
+                const weights = allowedPitches.map(p => 1 + (wrongCounts.get(p)?.count || 0) * BIAS_FACTOR);
+                do {
+                    firstPitch = weightedRandom(allowedPitches, weights);
+                } while (firstPitch === lastPitch && allowedPitches.length > 1);
+            }
+            lastPitch = firstPitch;
+            let noteInfo = getNoteInfo(firstPitch);
+            currentSet.push({pitch: firstPitch, noteInfo});
+            // Generate subsequent pitches with limited jumps and bias
+            for (let i = 1; i < setSize; i++) {
+                let possible = [];
+                for (let step = 1; step <= maxJump; step++) {
+                    let up = lastPitch + step;
+                    if (up <= maxPitch && allowedSemis.includes(up % 12)) {
+                        possible.push({pitch: up, step: step});
+                    }
+                    let down = lastPitch - step;
+                    if (down >= minPitch && allowedSemis.includes(down % 12)) {
+                        possible.push({pitch: down, step: step});
+                    }
+                }
+                let newPitch;
+                if (possible.length === 0) {
+                    // Fallback to random allowed pitch != last
+                    const candidates = allowedPitches.filter(p => p !== lastPitch);
+                    if (candidates.length === 0) {
+                        newPitch = lastPitch; // Unavoidable repeat
+                    } else {
+                        const weights = candidates.map(p => 1 + (wrongCounts.get(p)?.count || 0) * BIAS_FACTOR);
+                        newPitch = weightedRandom(candidates, weights);
+                    }
+                } else {
+                    const weights = possible.map(item => item.step + (wrongCounts.get(item.pitch)?.count || 0) * BIAS_FACTOR);
+                    const selected = weightedRandom(possible, weights);
+                    newPitch = selected.pitch;
+                }
+                noteInfo = getNoteInfo(newPitch);
+                currentSet.push({pitch: newPitch, noteInfo});
+                lastPitch = newPitch;
+            }
+            // Increment display counts
+            currentSet.forEach(item => {
+                const count = noteDisplays.get(item.pitch) || 0;
+                noteDisplays.set(item.pitch, count + 1);
+            });
+            currentIndex = 0;
+            currentError = false;
+            pendingAdvance = false;
+            drawSet();
+            updateNoteNameDisplay();
+            if (currentSet.length > 0) {
+                playNote(currentSet[0].pitch, 0.8, waveform);
+            }
+            currentStartTime = Date.now(); // Start timer for first note
+            console.log('New set:', currentSet.map(item => item.noteInfo.displayName));
+        }
+
+        // Handle correct note-on (recognition and timing, but advance on off)
+        function handleCorrectPress(pitch) {
+            const timeTaken = Date.now() - currentStartTime; // Time for this note (to press)
+            totalTime += timeTaken;
+            noteCount++;
+            totalCorrect++;
+            // Increment correct plays
+            const corrCount = noteCorrects.get(pitch) || 0;
+            noteCorrects.set(pitch, corrCount + 1);
+            // Decrement bias count if exists
+            let biasEntry = wrongCounts.get(pitch);
+            if (biasEntry && biasEntry.count > 0) {
+                biasEntry.count--;
+                if (biasEntry.count === 0) {
+                    wrongCounts.delete(pitch);
+                }
+            }
+            pendingAdvance = true;
+            currentError = false;
+            flashStaff(true);
+            updateStats();
+            updateTimer();
+            drawSet(); // Show green for pending
+            console.log('Correct note pressed, waiting for release...');
+        }
+
+        // Handle wrong note-on
+        function handleWrong(targetPitch, playedPitch) {
+            totalWrongs++;
+            // Increment total wrongs for target
+            totalWrongsPerNote.set(targetPitch, (totalWrongsPerNote.get(targetPitch) || 0) + 1);
+            // Increment bias count for target
+            let biasEntry = wrongCounts.get(targetPitch);
+            if (!biasEntry) {
+                const noteInfo = getNoteInfo(targetPitch);
+                biasEntry = {
+                    pitch: targetPitch,
+                    count: 0,
+                    noteName: noteInfo.displayName.replace(/\/\d+$/, '')
+                };
+                wrongCounts.set(targetPitch, biasEntry);
+            }
+            biasEntry.count++;
+            currentError = true;
+            drawSet(); // Show red on current note
+            updateLedger(); // Refresh display
+            updateStats();
+            // Optionally reset timer for retry
+            // currentStartTime = Date.now();
+            flashStaff(false);
+            console.log('Wrong note played, retrying...');
+            setTimeout(() => {
+                currentError = false;
+                drawSet(); // Back to black
+            }, 300);
+        }
+
+        // MIDI message handler
+        function onMIDIMessage(event) {
+            const data = event.data;
+            console.log('Incoming MIDI data:', data); // Debug: See all messages
+            const statusByte = data[0];
+            const status = statusByte & 0xF0; // Message type
+            const pitch = data[1];
+            if (status === 0x90) { // Note On
+                const velocity = data[2];
+                if (velocity > 0 && currentSet.length > 0) {
+                    console.log('Note On detected: Pitch', pitch, 'Velocity', velocity); // Debug
+                    const targetPitch = currentSet[currentIndex].pitch;
+                    if (pitch === targetPitch) {
+                        console.log('Match! Waiting for release...'); // Debug
+                        playNote(pitch, 0.3, waveform, 0.2); // Echo softly
+                        handleCorrectPress(targetPitch);
+                    } else {
+                        console.log('No match - expected', targetPitch); // Debug
+                        playNote(pitch, 0.3, waveform, 0.2); // Echo softly
+                        handleWrong(targetPitch, pitch);
+                    }
+                } else if (velocity === 0) {
+                    // Note On with vel=0 acts as Note Off
+                    handleNoteOff(pitch);
+                }
+            } else if (status === 0x80) { // Note Off
+                handleNoteOff(pitch);
+            }
+            // Ignore other messages
+        }
+
+        // MIDI success callback - populates selector
+        function onMIDISuccess(midi) {
+            if (!VF) {
+                document.getElementById('status').textContent = 'VexFlow not ready. Wait or reload.';
+                return;
+            }
+            midiAccess = midi;
+            const inputs = Array.from(midi.inputs.values());
+            console.log('Available MIDI inputs:', inputs.map(i => ({name: i.name, id: i.id}))); // Debug
+
+            if (inputs.length === 0) {
+                document.getElementById('status').textContent = 'No MIDI inputs found. Connect a device.';
+                return;
+            }
+
+            // Populate selector
+            const select = document.getElementById('midiSelect');
+            select.innerHTML = ''; // Clear
+            inputs.forEach((input, index) => {
+                const option = document.createElement('option');
+                option.value = input.id; // Use id for unique key
+                option.textContent = input.name || `MIDI Input ${index + 1}`;
+                select.appendChild(option);
+            });
+
+            // Show selector, hide connect
+            document.getElementById('midiSelector').style.display = 'block';
+            document.getElementById('connectBtn').style.display = 'none';
+            document.getElementById('status').textContent = 'MIDI devices detected. Select one below.';
+        }
+
+        // MIDI failure callback
+        function onMIDIFailure(error) {
+            console.error('MIDI Error:', error);
+            document.getElementById('status').textContent = 'MIDI access denied or unavailable. Try in Chrome/Edge.';
+        }
+
+        // Connect button handler - now handles reconnect too
+        document.getElementById('connectBtn').addEventListener('click', () => {
+            if (navigator.requestMIDIAccess) {
+                navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+            } else {
+                alert('Web MIDI not supported in this browser.');
+            }
+        });
+    </script>
+</body>
+</html>
