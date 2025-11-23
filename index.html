@@ -1,896 +1,516 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIDI Sight Reader - Treble Chromatic</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vexflow/3.0.9/vexflow-min.js"></script>
+    <!-- Viewport crítico para móviles: scale=1.0 asegura que se vea al 100% del ancho -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Diarios de Suiza 1972-1975</title>
+    
+    <!-- Cargar librería de flip -->
+    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Lora:ital,wght@0,400;0,700;1,400&family=Caveat:wght@700&display=swap');
+
+        /* --- ESTILOS GENERALES --- */
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f0f0;
+            background-color: #1a1a1a; 
+            margin: 0; 
+            height: 100vh; 
+            width: 100vw;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            font-family: 'Lora', serif; 
+            overflow: hidden;
         }
-        #staffContainer {
-            margin: 20px auto;
-            border: 1px solid #ccc;
-            background: white;
-            transition: background-color 0.3s ease;
-            overflow-x: auto;
+
+        /* Contenedor del libro RESPONSIVE */
+        .book-container {
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            /* Tamaño base para escritorio */
+            width: 550px;
+            height: 780px;
+            /* Ajuste máximo para móviles */
+            max-width: 100%;
+            max-height: 100%;
         }
-        #noteStripe {
-            height: 60px;
-            background: #f9f9f9;
-            border-bottom: 1px solid #ddd;
+
+        .page {
+            background-color: #fffef0; 
+            border: 1px solid #ccc; 
+            overflow: hidden; 
             position: relative;
-            padding: 0;
         }
-        #staff {
-            background: white;
+
+        .page-content {
+            padding: 55px 45px;
+            height: 100%; 
+            box-sizing: border-box;
+            display: flex; 
+            flex-direction: column;
         }
-        #status {
-            margin: 10px;
-            font-size: 18px;
-            color: #333;
+
+        /* Tipografía */
+        p { 
+            font-size: 1rem; 
+            line-height: 1.6; 
+            text-align: justify; 
+            margin-bottom: 18px; 
+            color: #222; 
         }
-        #ledger {
-            margin: 10px;
-            font-size: 14px;
-            color: #666;
-            text-align: left;
-            max-width: 500px;
-            margin: 10px auto;
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
+        
+        .header {
+            font-family: 'Cinzel', serif; 
+            font-weight: bold; 
+            border-bottom: 2px solid #444;
+            margin-bottom: 25px; 
+            text-align: center; 
+            font-size: 1.1rem; 
+            padding-bottom: 8px;
+            color: #111;
         }
-        #ledger:empty {
-            display: none;
+        
+        .handwritten {
+            font-family: 'Caveat', cursive; 
+            font-size: 2rem; 
+            color: #003366;
+            text-align: right; 
+            margin-top: auto; 
+            padding-top: 20px;
         }
-        #sessionDisplay {
-            margin: 10px;
-            font-size: 14px;
-            color: #666;
-            text-align: left;
-            max-width: 500px;
-            margin: 10px auto;
-            background: #f0f8ff;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #007bff;
+
+        /* Fotos */
+        .photo-frame {
+            width: 100%; 
+            height: 260px; 
+            background: #f4f4f4; 
+            border: 6px solid #fff;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.15); 
+            margin: 25px auto;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden;
+            transform: rotate(-0.5deg);
         }
-        #sessionDisplay:empty {
-            display: none;
+        .photo-frame img {
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            filter: sepia(15%) contrast(110%);
         }
-        .wrong-entry {
-            display: inline-block;
-            margin-right: 15px;
-            padding: 2px 5px;
-            background: #ffe6e6;
-            border-radius: 3px;
+        .caption { 
+            font-size: 0.8rem; 
+            text-align: center; 
+            color: #666; 
+            font-style: italic; 
+            margin-top: 8px; 
         }
-        .range-controls {
-            margin: 10px;
-            font-size: 14px;
-            display: flex;
-            flex-wrap: wrap;
+
+        /* Portada */
+        .cover {
+            background-color: #2c3e50; 
+            color: #fff; 
+            padding: 40px;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between;
+            border-right: 8px solid #1a252f;
+        }
+        .title {
+            font-family: 'Cinzel', serif; 
+            font-size: 3rem; 
+            line-height: 1.1;
+            text-align: center; 
+            font-weight: 700; 
+            margin-top: 20px;
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            font-family: 'Lora', serif; 
+            font-size: 1.1rem; 
+            text-align: center; 
+            font-style: italic; 
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        .cover-img {
+            flex-grow: 1; 
+            margin: 30px 0; 
+            border: 4px solid #fff; 
+            background: #000;
+            overflow: hidden; 
+            display: flex; 
+            align-items: center; 
             justify-content: center;
-            align-items: center;
-            gap: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
-        .range-controls label {
-            margin: 0 5px;
-            white-space: nowrap;
+        .cover-img img {
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            filter: grayscale(100%) sepia(40%) hue-rotate(180deg) saturate(150%) contrast(120%);
         }
-        .range-controls input[type="number"] {
-            width: 50px;
-            padding: 2px;
-            font-size: 14px;
+
+        /* Navegación Flotante */
+        .controls-container {
+            position: fixed; bottom: 20px; left: 0; width: 100%;
+            display: flex; justify-content: center; gap: 30px;
+            z-index: 10000; pointer-events: none;
         }
-        .range-controls input[type="checkbox"] {
-            margin-left: 2px;
+        
+        .nav-btn {
+            pointer-events: auto; 
+            background: #f5c518; 
+            border: 2px solid #fff; 
+            padding: 12px 30px;
+            font-family: 'Cinzel', serif; 
+            font-weight: bold; 
+            font-size: 0.9rem;
+            border-radius: 50px; 
+            cursor: pointer; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+            color: #000; 
+            transition: transform 0.1s;
         }
-        .range-controls select {
-            padding: 2px;
-            font-size: 14px;
+        .nav-btn:active { transform: scale(0.95); background: #e0b000; }
+
+        .page-num {
+            position: absolute; top: 25px; right: 25px;
+            font-family: 'Cinzel', serif; font-weight: bold; color: #999; font-size: 0.9rem;
         }
-        .correct-flash {
-            background-color: rgba(0, 255, 0, 0.3) !important;
+
+        /* Buscador */
+        .search-box { width: 100%; padding: 12px; font-size: 1rem; margin-bottom: 15px; font-family: 'Lora'; border:2px solid #333; }
+        .search-list li {
+            background: #eee; padding: 10px; margin-bottom: 5px; cursor: pointer; font-size: 0.9rem; border-bottom:1px solid #ddd;
         }
-        .wrong-flash {
-            background-color: rgba(255, 0, 0, 0.3) !important;
+        .index-list { list-style: none; padding: 0; }
+        .index-list li {
+            padding: 15px 0; border-bottom: 1px dashed #ccc; cursor: pointer;
+            font-weight: bold; font-family: 'Cinzel', serif; font-size: 0.95rem;
         }
-        #stats {
-            margin: 10px;
-            font-size: 16px;
-            color: #333;
-            text-align: center;
-            background: #e8f5e8;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #4caf50;
+        .index-list li:hover { color: #d35400; }
+        .index-num { float: right; color: #777; }
+
+        /* --- MEDIA QUERIES PARA MÓVILES --- */
+        @media only screen and (max-width: 768px) {
+            .book-container {
+                width: 100vw; /* Ocupar todo el ancho */
+                height: 85vh; /* Dejar espacio para controles */
+            }
+            .page-content {
+                padding: 30px 20px; /* Reducir márgenes internos */
+            }
+            .cover-page {
+                padding: 20px;
+            }
+            .title {
+                font-size: 2rem; /* Título más pequeño */
+            }
+            .subtitle {
+                font-size: 0.9rem;
+            }
+            p {
+                font-size: 0.9rem; /* Letra legible pero ajustada */
+            }
+            .photo-frame {
+                height: 200px; /* Fotos más bajas */
+                margin: 15px auto;
+            }
+            .handwritten {
+                font-size: 1.5rem;
+            }
+            .controls-container {
+                bottom: 10px;
+                gap: 20px;
+            }
+            .nav-btn {
+                padding: 10px 20px;
+                font-size: 0.8rem;
+            }
         }
-        #timer {
-            margin: 10px;
-            font-size: 16px;
-            color: #333;
-            text-align: center;
-            background: #e8f5e8;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #4caf50;
-        }
-        #noteNameDisplay {
-            font-size: 36px;
-            font-weight: bold;
-            color: #333;
-            display: none;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 5px 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            position: absolute;
-            z-index: 10;
-            top: 10px;
-        }
-        #midiSelector {
-            margin: 10px;
-            display: none;
-            background: #f0f8ff;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #007bff;
-        }
-        #midiSelector select, #midiSelector button {
-            margin: 5px;
-            padding: 5px;
-        }
-        .button-row {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 10px;
-        }
-        .button-row button {
-            flex: 1;
-            max-width: 150px;
-            padding: 8px 12px;
-        }
-        #showSessionStats {
-            padding: 8px 12px;
-        }
-        #resetSessionBtn {
-            background-color: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #resetSessionBtn:hover {
-            background-color: #cc0000;
-        }
-        #connectBtn {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #connectBtn:hover {
-            background-color: #0056b3;
-        }
+
     </style>
 </head>
 <body>
-    <h1>MIDI Sight Reader</h1>
-    <p>Connect your MIDI keyboard and play the highlighted note on the staff!</p>
-    <div id="status">Loading VexFlow...</div>
-    <div class="range-controls">
-        <label for="minPitch">Min MIDI: <input type="number" id="minPitch" value="53" min="0" max="127" step="1"></label>
-        <label for="maxPitch">Max MIDI: <input type="number" id="maxPitch" value="88" min="0" max="127" step="1"></label>
-        <label for="setSize">Set Size: <input type="number" id="setSize" value="20" min="6" max="30" step="1"></label>
-        <label for="maxJump">Max Jump: <input type="number" id="maxJump" value="5" min="1" max="18" step="1"></label>
-        <label for="useSharps">Sharps: <input type="checkbox" id="useSharps" checked></label>
-        <label for="useFlats">Flats: <input type="checkbox" id="useFlats" checked></label>
-        <label for="onlyAccidentals">Only Acc.: <input type="checkbox" id="onlyAccidentals"></label>
-        <label for="showNoteName">Note Name: <input type="checkbox" id="showNoteName" checked></label>
-        <label for="enableSound">Sound: <input type="checkbox" id="enableSound"></label>
-        <label for="waveform">Wave: <select id="waveform">
-            <option value="sine">Sine</option>
-            <option value="square">Square</option>
-            <option value="sawtooth">Sawtooth</option>
-            <option value="triangle">Triangle</option>
-        </select></label>
-    </div>
-    <div id="stats"></div>
-    <div id="timer"></div>
-    <div id="ledger"></div>
-    <div class="button-row">
-        <button id="connectBtn">Connect MIDI</button>
-        <button id="showSessionStats">Show Session Stats</button>
-        <button id="resetSessionBtn">Reset Session</button>
-    </div>
-    <div id="sessionDisplay"></div>
-    <div id="midiSelector">
-        <p>Select MIDI Input:</p>
-        <select id="midiSelect"></select>
-        <button id="useSelectedBtn">Use Selected Input</button>
-    </div>
-    <div id="staffContainer">
-        <div id="noteStripe">
-            <div id="noteNameDisplay"></div>
+
+    <div id="book" class="book-container">
+        
+        <!-- PÁGINA 0: PORTADA -->
+        <div class="page cover" data-density="hard">
+            <div>
+                <div class="title">DIARIOS DE<br>SUIZA<br>1972-1975</div>
+                <div class="subtitle">Cartas de un viaje iniciático</div>
+            </div>
+            <div class="cover-img"><img src="LibroEuropa/portada.png" alt="FOTO PORTADA"></div>
+            <div style="text-align:center; font-family:'Cinzel'; font-size:1.5rem; font-weight:bold;">GUILLERMO BONA</div>
         </div>
-        <div id="staff"></div>
+
+        <!-- Pág 1: Blanco -->
+        <div class="page" data-density="soft"></div>
+
+        <!-- PÁGINA 2: ÍNDICE -->
+        <div class="page" data-density="soft">
+            <div class="page-content">
+                <div class="header">ÍNDICE</div>
+                <ul class="index-list">
+                    <li onclick="flip(4)">I. Llegada a Estocolmo <span class="index-num">4</span></li>
+                    <li onclick="flip(10)">II. Visita a Gotemburgo y SKF <span class="index-num">10</span></li>
+                    <li onclick="flip(17)">III. Resumen y Despedida <span class="index-num">17</span></li>
+                    <li onclick="flip(22)">IV. Llegada a Zurich <span class="index-num">22</span></li>
+                    <li onclick="flip(28)">V. Mudanza a Winterthur <span class="index-num">28</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- PÁGINA 3: BUSCADOR -->
+        <div class="page" data-density="soft">
+            <div class="page-content">
+                <div class="header">BUSCADOR</div>
+                <p>Escriba una palabra clave para buscar en el diario.</p>
+                <input type="text" id="sInput" class="search-box" placeholder="Buscar..." onkeyup="search()" onmousedown="stop(event)" ontouchstart="stop(event)">
+                <ul id="sList" class="search-list" onmousedown="stop(event)" ontouchstart="stop(event)"></ul>
+            </div>
+        </div>
+
+        <!-- CARTA 1: LLEGADA A ESTOCOLMO (Páginas 4-9) -->
+        <div class="page" data-density="soft"><div class="page-num">4</div><div class="page-content">
+            <div class="header">11 de Febrero - Estocolmo</div>
+            <p>11/2/72<br>Queridos mami, papi y Nelito:</p>
+            <p>El vuelo fue muy bueno, la única es que dan demasiado para comer. Europa está todo nublado, desde Lisboa hasta acá. En Zurich cuando el avión pasó las nubes para aterrizar pude ver un poco de Suiza (no hay nieve en los campos; en la montaña sí) el aeropuerto es increíble! En Copenhagen había muchísima niebla y aterrizamos con radar, desde la pista ni se veía el aeropuerto. Acá en Suecia nevó ayer y está todo blanco. El viaje de Arlanda hasta Estocolmo es lindísimo lo único que no tenía nieve era la ruta. Cuando llegué a Arlanda en un estante que dice "Information" había una nota de la amiga de Nick con la dirección del hotel.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">5</div><div class="page-content">
+            <p>Me tomé el ómnibus y después un taxi que me costó 1600$ (un afano!). Acá en el hotel me dejó una carta diciendo que la llame por teléfono. Estoy en pleno centro (más o menos la calle Florida de Estocolmo). es una pieza de 3m x 7m 1 cama 1 escritorio 1 ropero 1 lavatorio, tiene una ventana que da a la calle. Llegué a las 4hs me lavé y esperé hasta las cinco y media para llamar a la amiga de Nick. La llamé y es una señora macanuda y me invitó a almorzar mañana con ella.</p>
+            <div class="photo-frame"><img src="LibroEuropa/foto1.png" alt="FOTO ESTOCOLMO"></div>
+            <div class="caption">Centro de Estocolmo</div>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">6</div><div class="page-content">
+            <p>A las seis (plena noche) bajé a comer comí bien pero me costó 3.500$ (otro afano) Mañana voy a ver si compro algo para comer acá porque si no me fondo en tres días. El hotel creo que cuesta 10 coronas (8000$) es barato (en comparación) y es limpísimo. Después de comer salí a dar una vuelta, la temperatura es de -2 C° pero yo no siento mucho frío. Los negocios son lindísimos, muy limpios y bien ordenados.</p>
+            <p>Acá la gente está toda loca ¡cruzan por la esquina y con el semáforo! Lo que sí es que si encuentro un tipo que tenga el pelo más corto que la altura de los hombros le pago una cena con vino, lomo y café porque estoy seguro que no hay uno solo.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">7</div><div class="page-content">
+            <p>Es increíble pero hay una cantidad de roñosos y melenudos que no salgo del asombro, y eso que estuve paseando 20 minutos nada más. Recién cuando caminaba pasó un tipo por la vereda de enfrente que tenía por lo menos 4 inyecciones de heroína, gritaba, corría, se paraba, puteaba a la gente en sueco; y tenía como máximo 20 años. Después por todos lados hay tipos con cara de drogados, probablemente porque es de noche, pero sin embargo hay muchísima gente en la calle.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">8</div><div class="page-content">
+            <p>Antes que salude otra cosa, te dicen gracias (Tak) por cualquier cosa, si a un tipo lo pateás te dice Tak, son muy amables.</p>
+            <div class="handwritten">Guillermo</div>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">9</div><div class="page-content"></div></div> <!-- Relleno -->
+
+        <!-- CARTA 2: VISITA A GOTEMBURGO Y SKF (Páginas 10-16) -->
+        <div class="page" data-density="soft"><div class="page-num">10</div><div class="page-content">
+            <div class="header">15 de Febrero - Gotemburgo</div>
+            <p>Martes 15/2/72<br>Bueno, ya estoy en Gotemburgo.</p>
+            <p>El sábado fui a comer a un restaurant muy bueno con la amiga de Nick y un tipo de 25 años y después fuimos a dar una vuelta por el centro. A las 5 se fueron porque tenían otros compromisos, entonces fui al hotel y dormí un poco porque estaba muy cansado, después fui a comer y miré televisión en el bar los olimpíadas de Sapporo en color; ¡fabuloso! El domingo el tipo este me llevó a ver el WASA y el parque SKANSEN donde comí un smörgåsbord buenísimo.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">11</div><div class="page-content">
+            <p>El lunes fui a Arlanda a tomar el avión que tuvo casi tres horas de demora y tuve que cambiar de avión tres veces; uno estaba roto y el otro tenía la goma pinchada. Llegué a Torslanda a eso de la una y tomé el colectivo hasta el Park Avenue Hotel donde me encontré con Inga. A la noche fui con Anna y una amiga a un restaurante chino, después volvimos a casa y cayeron dos suecos y estuvimos charlando un rato.</p>
+            <div class="photo-frame"><img src="LibroEuropa/foto2.png" alt="FOTO SKF"></div>
+            <div class="caption">Fábrica SKF</div>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">12</div><div class="page-content">
+            <p>Realmente estoy maravillado con las ciudades y la gente, no siento ninguna diferencia notable con Buenos Aires y me gusta estar más acá que allá. Lo único criticable son los borrachos en Estocolmo que hay para tirar al techo. Me dicen que probablemente vi muchos porque era un fin de semana y estaba enfrente de la terminal de subtes que es donde se encuentran generalmente.</p>
+            <p>El transporte es increíble, todo muy bien organizado. Esta mañana me fui solo a SKF en tranvía y llegué lo más bien. Ahí pregunté por la secretaria Holmqvist y en seguida me atendieron lo más bien.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">13</div><div class="page-content">
+            <p>A ella le di el paquete para Gruffman y lo fui a ver a Bo Overgaard que estaba muy contento y es macanudo. Cuando le dije lo de Suiza en seguida me dijo que vaya a pedir trabajo a SKF. Después fui con un señor que te conoce y creo que se llama Erlenson o algo así, que me llevó a ver algo de lo increíblemente grande que es la fábrica (bolillas, jaulas y montaje). La fábrica me asombró.</p>
+            <p>Me olvidé de verlo a Cederwall pero uno de estos días voy a llamarlos a ver si puedo ir a la casa. Creo que el domingo o el lunes me voy porque Anna también se va y además las ciudades parecen sacadas de los libros de historia, con casas viejas y muy lindas.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">14</div><div class="page-content">
+            <p>No quiero abusar de la hospitalidad. Creo que en Suiza no voy a tener ningún problema con el trabajo. No creo que les dije que en el avión al lado mío se sentó un suizo piola que me dijo una que no hay problema e incluso me dio su tarjeta de Zurich para que lo llame. Creo que no voy a ir a Copenhague porque Jensen vive por la loma del quinoto.</p>
+            <p>Todavía no entiendo como, después de haber visto todo esto (y eso que vi poco), están viviendo en Buenos Aires. Tengo fe en el país, pero… no tanto.</p>
+            <p>Mis cartas háganlas circular por la flia, porque les voy a escribir postales a los demás parientes, o quizás una carta de vez en cuando.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">15</div><div class="page-content">
+            <p>Papi no te preocupes que la plata alcanza, hay que amarrocar un poco, pero… soy buen suizo en ese sentido. En Estocolmo bajé tres kilos pero pienso recuperarlos y con creces (peso 65 ahora !). Mami no te preocupes que tu Guillermito se cuida, me abrigo bien (aunque no hace frío +2 C° en Gotemburgo, no nieve) y tomo vitaminas todos los días.</p>
+            <p>Cariños a todo aquel que por mi pregunte por mi. Guillermo.</p>
+            <p>PD: Causé muy buena impresión en SKF y estoy seguro que los dejé bien. Nelo estudiá! a ver si cuando termina el año podés venir. ¿Me extrañás hermanito?</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">16</div><div class="page-content"></div></div> <!-- Relleno -->
+
+        <!-- CARTA 3: RESUMEN SEMANAL Y AEROGRAMA (Páginas 17-21) -->
+        <div class="page" data-density="soft"><div class="page-num">17</div><div class="page-content">
+            <div class="header">21 de Febrero - Resumen Semanal</div>
+            <p>Estimada flia: Creo que la última carta que escribí fue la de la visita a la fábrica el martes. Hoy termino una semana agotadora en Gotemburgo. Les escribo un resumen de lo que hice porque es demasiado como para entrar en detalles. El miércoles a la mañana me buscó Johann Cederwall el hijo mayor y me llevó durante todo el día en auto a recorrer la ciudad y alrededores. Mölndal, Frölunda Torg, el otro lado del Gota älv, Gunnebo donde vimos un castillo, y hubo una casa bestial que nos llamó poderosamente la atención y despues nos enteramos que era de SKF. A la noche me fui a dormir porque no daba más.</p>
+            <div class="photo-frame"><img src="LibroEuropa/foto3.png" alt="FOTO KUNGSBACKA"></div>
+            <div class="caption">Kungsbacka</div>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">18</div><div class="page-content">
+            <p>El jueves dormí hasta tarde, después paseé por la ciudad a pie y a la noche fuimos a comer a la casa de Charlotte que vive con el novio y es un tipo muy simpático y con mucho sentido del humor, nos divertimos muchísimo. El viernes fui a comprar algunas cosas (un teleobjetivo y otras chiches para la máquina). A la tarde fuimos a comer a la casa de Anita que estuvo muy contenta con los jabones pero Suecia no le gusta mucho. Estoy comiendo pescado como loco.</p>
+            <p>el sábado al mediodía fuimos a un restaurante en el puerto (creo que se llama Frederikhavn o algo) con Charlotte y el novio (Lars). A la tarde fui al Scandinavium a ver Jesus Christ Superstar con Bo, Johann y la novia, la entrada me la regaló Anita porque dijo que a ella no le gusta.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">19</div><div class="page-content">
+            <p>A la noche fui con Lars y Charlotte a una discoteca para estudiantes de medicina y realmente la pasé muy bien (ya estoy seguro que cuando me case me caso con una sueca). El domingo fui con Johann y la novia a recorrer la ciudad, almorcé en la casa de Anita y despues fuimos a la estación a despedir a Anna que volvía a Sigtuna. En la estación había arreglado encontrarme con Gunell y Mr. Gustafson, así que...</p>
+            <p>...Después de la partida fui a tomar un café con ellos Gunell estaba contentísima. Pronto se tiene que operar, creo que de una úlcera. Después seguí con Johann y la novia hasta KUNGSBACKA y volvimos por la costa.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">20</div><div class="page-content">
+            <p>A la noche fuimos de nuevo a la casa de Anita a cenar Anita, Gunell (escribile !!!) e Inga te mandan saludos, gracias, augurios de prosperidad y demás afines. Junto con esta mando otra carta con mis detalles espero que lleguen juntas.</p>
+            <div class="handwritten">Saludos Guillermo</div>
+            <br>
+            <p style="text-align:center; font-size:0.8rem; color:#666;">Lunes 21 - G. Bona - P. IV Göthemburs - Södra Vägen 41 - SWEDEN</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">21</div><div class="page-content"></div></div>
+
+        <!-- CARTA 4: LLEGADA A ZURICH (Páginas 22-27) -->
+        <div class="page" data-density="soft"><div class="page-num">22</div><div class="page-content">
+            <div class="header">22 de Febrero - Zurich</div>
+            <p>Martes 22/2/72   Carta 4 (creo)<br>Queridos:</p>
+            <p>Ayer a las 6.20 llegué a Zürich. Trudy me buscó con un SAAB nuevo que tienen. El departamento es muy lindo. Me dieron una pieza (con una cama que es la delicia) y un baño grande como el de Nelo. Trudy es encantadora, y Jack un hombre de pocas pulgas pero muy buen tipo; me está ayudando muchísimo.</p>
+            <div class="photo-frame"><img src="LibroEuropa/foto4.png" alt="FOTO ZURICH"></div>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">23</div><div class="page-content">
+            <p>Este mañana fui con él al registro militar. Todo puede andar bien con un solo detalle; entre las pruebas de admisión hay una especie de test de comprensión en Francés, así que me dijeron que tengo que sí o - sí poder entender y hablar Francés. Las pruebas (físicas, médicas, etc) se realizan del 20 de Marzo al 15 de Abril, así que para ese tiempo tengo que aprender Francés. Cabe la posibilidad de que en caso de ser rechazado, me propongan el servicio hasta Febrero 73 o probablemente hasta Julio 73'. En este caso si me vuelvo a Bs As el gobierno me paga el viaje de regreso a Suiza.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">24</div><div class="page-content">
+            <p>Ahora bien; pensando optimistamente creo que puedo aprender suficiente Francés en 1 mes (o un poco más) como para pasarlo. Después de todo cuando me tomen la prueba yo les puedo explicar mi posición y decirles que antes de ingresar en el servicio voy a estar tres meses en la Suiza francesa con lo que creo voy a poder hablar suficiente Francés.</p>
+            <p>Pensando así lo llamé a Spichiger. A las 2hs me buscó en la estación de Zurich y me llevó a dar una vuelta y a tomar algo, Mientras hablamos del asunto.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">25</div><div class="page-content">
+            <p>Después de intercambiar opiniones decidí esto: ir a la Suiza francesa (Neuchatel o Lausanne o Ginebra, etc) e instalarme ahí; asistir a algún colegio para aprender Francés o alguna especie de crash-course. En dos días él me va a averiguar precios y lugares y despos tendré que decidir por cual yo ya le expliqué que no quería gastar mucho. En cuanto al trabajo creo que hasta después de las pruebas no puedo decidir nada, y creo que es mejor estudiar intensivamente que trabajar y estudiar. Aparte, según Spichiger, en la S. Francesa hay muchos jóvenes en mi condición que vienen de la S. Alem. y quieren conseguir un trabajo para aprender mejor el francés, y por esto se hace un poco difícil. Aunque conseguir trabajo de post-boy o lavaplatos o pinche es fácil. Pero igual esto lo voy a decidir después de ver si me admiten o no.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">26</div><div class="page-content">
+            <p>Creo que la plata me puede alcanzar para 4 ó 5 meses olgadamente. Por ahora no toqué un solo franco de los 4000. Y cuando empiece a gastar en serio no (casa, colegio, etc) te voy a decir si necesito o no que me mandes.</p>
+            <p>Papi, yo creo que si no hubiera podido venir gratis, vos habrías hecho muy mal en no mandarme. Es algo que nunca te hubieras perdonado porque esto es increíble, una experiencia de marca mayor. Desde que nací es la cosa más feliz que me aconteció (¿que me contás?). Más adelante les escribo una carta (el viernes probablemente) de mis impresiones sobre Suiza, porque esto me parece más impactante (el servicio, etc, todo eso) como para dejarlo de lado.</p>
+            <p>Spichiger macanudísimo y muy agradecido y muy contento de verme.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">27</div><div class="page-content">
+            <div class="handwritten">In God I Trust. Guillermo Bonasson</div>
+            <br>
+            <p style="font-size:0.8rem; text-align:center;">G. Bona - Palmstrasse 26 - CH 8400 Winterthur - SWITZERLAND</p>
+        </div></div>
+
+        <!-- CARTA 5: MUDANZA A WINTERTHUR (Páginas 28-32) -->
+        <div class="page" data-density="soft"><div class="page-num">28</div><div class="page-content">
+            <div class="header">29 de Febrero - Winterthur</div>
+            <p>Martes 29/2/72<br>Querida familia:</p>
+            <p>Esta mañana a las 8.30 tomé el tren a Zurich. Ahí me esperaba Mr. Spichiger. Nos subimos a su Mercedes Benz y me trajo hasta Lenzburg. Pasamos y visitamos un poco de Solothurn, Berna y Neuchatel. Llegamos acá a las 5 P.M. Fuimos a la oficina de SKF y ahí conocí a Mr. Ringger que mañana me viene a buscar para llevarme al Berlitz School.</p>
+            <div class="photo-frame"><img src="LibroEuropa/foto5.png" alt="FOTO WINTERTHUR"></div>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">29</div><div class="page-content">
+            <p>Uds se preguntarán ¿dónde estoy? Bueno, estoy en la Pensión "Foyer de Vidy" que está entre el cementerio y el lago. Son 5 bungalows largos con 90 piezas en c/u (dibujo). Fueron construidos para una exposición que hubo una vez y después los compró el estado. Son de madera y teja. La pieza mide unos 3.5m x 5m, tiene 1 cama (muy buena) 2 roperos 1 mesa y 2 sillas. En el bungalow hay inodoros, mingitorios, duchas y lavatorios. Todo es muy limpio y cómodo. Ah! También hay calefacción.</p>
+            <p>Lo único, es que no tengo toalla así que mañana voy a comprarme un toallón barato para bañarme. Es sin comida, pero acá hay un bungalow donde sirven desayuno y creo que cena. Las otras comidas las comeré por ahí.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">30</div><div class="page-content">
+            <p>La pieza es barata, 9 francos por noche (es lo más barato de Lenzburg). La macana de esto es que en 13 días me tengo que ir porque ya está reservado, así que voy a ver si lo convenzo al dueño o me busco otra cosa.</p>
+            <p>Yo ya no me acuerdo ni lo que les escribo porque estoy escribiendo a mucha gente, así que Uds pregunten nomás si ven que falta algo. Por ahora sigan mandando las cartas a la casa de Trudy que ella me las va a mandar a donde esté.</p>
+            <p>Spichiger es macanudísimo, se rompió todo por mi. Sinceramente a veces me daba verguenza. Otro que me ayudó muchísimo fue Jack ¿quien dijo que era antipático? yo hablé mucho con él y nos divertimos mucho.</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">31</div><div class="page-content">
+            <p><strong>Interesting data:</strong><br>
+            + El 2 o 3 de Abril vuelvo a Winterthur.<br>
+            + El curso en Berlitz cuesta 315 francos.<br>
+            + 2000 francos se los dejé a Trudy y 2000 me traje.<br>
+            + En total me quedan 4.200 francos (y ya pagué 7 días de alojamiento).</p>
+            <p>Voy a ver si en la próxima carta puedo escribirles de la visita que hice a la casa de Henri, o ya te los conté ? ¡que se yo! H. Spichiger manda muchos saludos (quiere que lo llame Hans).</p>
+            <div class="handwritten">Saludos a todos Guillermo</div>
+            <br>
+            <p style="font-size:0.8rem; text-align:center;">G. Bona - Palmstrasse 26 / J. Andereg - CH 8400 Winterthur - SWITZERLAND</p>
+        </div></div>
+
+        <div class="page" data-density="soft"><div class="page-num">32</div><div class="page-content"></div></div> <!-- Relleno -->
+
+        <!-- CONTRATAPA -->
+        <div class="page cover" data-density="hard" style="border-left:5px solid #c49000; border-right:none;">
+            <div style="border:2px solid #fff; padding:10px; text-align:center; font-family:'Cinzel'; font-size:1rem;">ARCHIVO FAMILIAR BONA</div>
+            <div style="text-align:center; margin:auto; font-style:italic; font-size:1.2rem;">"Desde que nací es la cosa más feliz que me aconteció."</div>
+            <div style="text-align:center; font-weight:bold;">DIGITALIZADO 2025</div>
+        </div>
+    </div>
+
+    <!-- CONTROLES FLOTANTES PARA IPAD (SIEMPRE VISIBLES) -->
+    <div class="controls-container">
+        <button class="nav-btn" id="prev">ANTERIOR</button>
+        <button class="nav-btn" id="next">SIGUIENTE</button>
     </div>
 
     <script>
-        let VF = null; // Global VF - will be set after load check
-        let audioCtx = null; // Web Audio Context
-        let midiAccess = null;
-        let inputPort = null;
-        let isRunning = false; // Track if app is active
-        let currentSet = []; // Array of {pitch, noteInfo} objects
-        let currentIndex = 0; // Index of next note to play
-        let lastPitch = null; // Track last pitch to avoid repeats
-        let wrongCounts = new Map(); // Track bias {pitch: {pitch, count, noteName}}
-        let totalWrongsPerNote = new Map(); // Track total historical wrongs {pitch: count}
-        let noteDisplays = new Map(); // Track displays {pitch: count}
-        let noteCorrects = new Map(); // Track correct plays {pitch: count}
-        let totalCorrect = 0; // Total correct plays
-        let totalWrongs = 0; // Total wrong plays
-        let noteCount = 0; // Total notes played correctly (for timing)
-        let totalTime = 0; // Cumulative time in ms
-        let currentStartTime = null; // Start time for current note
-        let currentError = false; // Flag for temporary error state on current note
-        let pendingAdvance = false; // Flag to wait for note-off after correct note-on
-        let minPitch = 53;
-        let maxPitch = 88;
-        let setSize = 20;
-        let maxJump = 5;
-        let useSharps = true;
-        let useFlats = true;
-        let onlyAccidentals = false;
-        let showNoteName = true;
-        let enableSound = false;
-        let waveform = 'sine';
-        const BIAS_FACTOR = 3; // How much to bias towards wrong notes
+        let pageFlip;
+        // Datos simples para el buscador (actualizados con los nuevos números de página)
+        const pageTexts = {
+            4: "vuelo comida europa nublado zurich avion nieve campos montaña aeropuerto copenhagen niebla suecia arlanda estocolmo",
+            5: "information nota amiga nick direccion hotel omnibus taxi 1600 afano",
+            6: "carta telefono centro florida pieza 3m 7m cama escritorio ropero lavatorio ventana calle 4hs 5 y media señora macanuda almorzar 6 noche 3500",
+            7: "fondo 3 dias 10 coronas 8000 barato limpisimo temperatura -2 frio negocios limpios ordenados gente loca semaforo",
+            8: "pelo corto hombros cena vino lomo cafe increible roñosos melenudos asombro 20 minutos heroina inyecciones gritaba corria",
+            9: "drogados tak gracias amable",
+            10: "15 de febrero gotemburgo martes 15/2/72 sabado restaurant 25 años vuelta centro compromisos cansado television olimpiadas sapporo wasa skansen smorgasbord",
+            11: "lunes avion demora goma pinchada torslanda inga anna comida china fabrica skf",
+            12: "ciudades buenos aires borrachos techo fin de semana subtes transporte organizado secretaria holmqvist",
+            13: "paquete gruffman bo overgaard contento macanudo trabajo erlenson fabrica bolillas jaulas montaje cederwall",
+            14: "hospitalidad suizo piola tarjeta zurich copenhague jensen quinoto fe pais parientes",
+            15: "plata amarrocar kilos vitaminas",
+            17: "21 de febrero resumen semanal visita fabrica miercoles johann cederwall auto molndal frolunda torg gota alv gunnebo castillo",
+            18: "jueves paseo charlotte novio simpatico viernes teleobjetivo chiches anita jabones",
+            19: "sabado puerto frederikhaven lars scandinavium jesus christ superstar discoteca medicina domingo estacion despedir anna",
+            20: "aerograma lunes 21 gunell ulcera kungsbacka costa",
+            22: "22 de febrero zurich martes 22/2/72 carta 4 6.20 trudy saab departamento cama nelo jack registro militar",
+            23: "pruebas test comprension frances 20 de marzo 15 de abril rechazado servicio febrero 73 julio 73 bs as gobierno pasaje",
+            24: "optimistamente 1 mes spichiger 2hs vuelta opinion",
+            25: "suiza francesa neuchatel lausanne ginebra colegio crash-course precios trabajo post-boy lavaplatos pinche",
+            26: "plata 4000 francos experiencia marca mayor feliz acontecio",
+            27: "in god i trust guillermo bonasson palmstrasse",
+            28: "29 de febrero winterthur martes 29/2/72 tren mercedes benz lenzburg solothurn berna neuchatel oficina ringger berlitz",
+            29: "pension foyer de vidy bungalows madera teja calefaccion",
+            30: "toalla comida barata 13 dias jack antipatico",
+            31: "datos curso francos henri hans"
+        };
 
-        // Weighted random selection
-        function weightedRandom(items, weights) {
-            const total = weights.reduce((a, b) => a + b, 0);
-            let r = Math.random() * total;
-            for (let i = 0; i < items.length; i++) {
-                r -= weights[i];
-                if (r <= 0) return items[i];
-            }
-            return items[items.length - 1]; // Fallback
-        }
-
-        // Update session stats display
-        function updateSessionDisplay() {
-            const displayDiv = document.getElementById('sessionDisplay');
-            const allNotes = new Set([...noteDisplays.keys(), ...noteCorrects.keys()]);
-            if (allNotes.size === 0) {
-                displayDiv.innerHTML = '';
-                return;
-            }
-            let html = '<strong>Session Stats:</strong> ' + 
-                Array.from(allNotes).sort((a, b) => a - b).map(pitch => {
-                    const disp = noteDisplays.get(pitch) || 0;
-                    const corr = noteCorrects.get(pitch) || 0;
-                    const noteInfo = getNoteInfo(pitch);
-                    const noteName = noteInfo.displayName.replace(/\/\d+$/, '');
-                    return `<span class="wrong-entry">${noteName} ${pitch}: Displayed ${disp}, Correct ${corr}</span>`;
-                }).join(' | ');
-            displayDiv.innerHTML = html;
-        }
-
-        // Reset session function
-        function resetSession() {
-            wrongCounts.clear();
-            totalWrongsPerNote.clear();
-            noteDisplays.clear();
-            noteCorrects.clear();
-            totalCorrect = 0;
-            totalWrongs = 0;
-            noteCount = 0;
-            totalTime = 0;
-            lastPitch = null;
-            currentError = false;
-            pendingAdvance = false;
-            currentSet = [];
-            currentIndex = 0;
-            document.getElementById('staff').innerHTML = '';
-            updateLedger();
-            updateStats();
-            updateTimer();
-            updateNoteNameDisplay();
-            document.getElementById('sessionDisplay').innerHTML = '';
-            if (isRunning) {
-                document.getElementById('status').textContent = 'Session reset. New set generated.';
-                generateNewSet();
-            } else {
-                document.getElementById('status').textContent = 'Session reset. Click "Connect MIDI" to start a new session.';
-            }
-            console.log('Session reset.');
-        }
-
-        // Initialize Web Audio
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function search() {
+            let q = document.getElementById('sInput').value.toLowerCase();
+            let l = document.getElementById('sList'); l.innerHTML = '';
+            if(q.length<3) return;
+            for(let [p,t] of Object.entries(pageTexts)) {
+                if(t.includes(q)) {
+                    let li = document.createElement('li'); li.innerText = 'Ir a Pág ' + p;
+                    li.onclick = (e) => { stop(e); flip(parseInt(p)); };
+                    l.appendChild(li);
+                }
             }
         }
 
-        // Play a note sound
-        function playNote(pitch, duration = 0.5, type = 'sine', volume = 0.3) {
-            if (!enableSound) return;
-            initAudio();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.setValueAtTime(440 * Math.pow(2, (pitch - 69) / 12), audioCtx.currentTime);
-            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.type = type;
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + duration);
-        }
+        function stop(e) { e.stopPropagation(); }
+        function flip(n) { pageFlip.flip(n); }
 
-        // Update note name display
-        function updateNoteNameDisplay() {
-            const display = document.getElementById('noteNameDisplay');
-            if (!display) return;
-            if (showNoteName && currentSet.length > 0 && currentIndex < currentSet.length) {
-                display.textContent = currentSet[currentIndex].noteInfo.displayName;
-                display.style.display = 'block';
-                // Force reflow to get accurate width
-                display.offsetWidth;
-                const halfWidth = display.offsetWidth / 2;
-                const labelOffset = 96; // approx 1 inch
-                const labelStep = 48; // 44 * 1.10 for another 10% more distance
-                const noteX = 10 + labelOffset + (currentIndex * labelStep) + (labelStep / 2);
-                const x = noteX - halfWidth;
-                display.style.left = Math.max(0, x) + 'px';
-            } else {
-                display.style.display = 'none';
-            }
-        }
-
-        // Debug: Check if VexFlow loaded and set VF globally
-        window.addEventListener('load', () => {
-            if (typeof Vex === 'undefined') {
-                document.getElementById('status').textContent = 'Error: VexFlow failed to load. Check internet or script src.';
-                console.error('VexFlow not found');
-                return;
-            }
-            VF = Vex.Flow;
-            console.log('VexFlow loaded successfully, VF set.'); // Debug
-
-            // Set up waveform selector
-            document.getElementById('waveform').addEventListener('change', (e) => {
-                waveform = e.target.value;
+        document.addEventListener('DOMContentLoaded', () => {
+            const el = document.getElementById('book');
+            // Configuracion optimizada para iPad: SIN useMouseEvents y con mobileScrollSupport FALSE
+            pageFlip = new St.PageFlip(el, {
+                width: 550, height: 780, size: 'fixed',
+                minWidth: 300, maxWidth: 1000, minHeight: 400, maxHeight: 1000,
+                showCover: true, mobileScrollSupport: false,
+                useMouseEvents: false, // Importante para evitar doble disparo en touch
+                maxShadowOpacity: 0 // Elimina sombra fantasma
             });
-
-            // Set up enable sound checkbox
-            document.getElementById('enableSound').addEventListener('change', (e) => {
-                enableSound = e.target.checked;
-            });
-
-            // Set up note name checkbox
-            document.getElementById('showNoteName').addEventListener('change', (e) => {
-                showNoteName = e.target.checked;
-                updateNoteNameDisplay();
-            });
-
-            // Set up session stats button
-            document.getElementById('showSessionStats').addEventListener('click', () => {
-                updateSessionDisplay();
-            });
-
-            // Set up reset session button
-            document.getElementById('resetSessionBtn').addEventListener('click', () => {
-                resetSession();
-            });
-
-            // Set up range input listeners - regenerate set if running
-            document.getElementById('minPitch').addEventListener('change', (e) => {
-                minPitch = parseInt(e.target.value) || 53;
-                if (minPitch > maxPitch) maxPitch = minPitch;
-                e.target.value = minPitch;
-                if (isRunning) {
-                    generateNewSet(); // Regenerate on change
-                }
-            });
-            document.getElementById('maxPitch').addEventListener('change', (e) => {
-                maxPitch = parseInt(e.target.value) || 88;
-                if (maxPitch < minPitch) minPitch = maxPitch;
-                e.target.value = maxPitch;
-                if (isRunning) {
-                    generateNewSet(); // Regenerate on change
-                }
-            });
-            document.getElementById('setSize').addEventListener('change', (e) => {
-                setSize = parseInt(e.target.value) || 20;
-                if (setSize < 6) setSize = 6;
-                if (setSize > 30) setSize = 30;
-                e.target.value = setSize;
-                if (isRunning) {
-                    generateNewSet(); // Regenerate on change
-                }
-            });
-
-            // Set up maxJump input listener
-            document.getElementById('maxJump').addEventListener('change', (e) => {
-                maxJump = parseInt(e.target.value) || 5;
-                if (maxJump < 1) maxJump = 1;
-                if (maxJump > 18) maxJump = 18;
-                e.target.value = maxJump;
-                if (isRunning) {
-                    generateNewSet(); // Regenerate on change
-                }
-            });
-
-            // Set up sharp/flat checkboxes
-            document.getElementById('useSharps').addEventListener('change', (e) => {
-                useSharps = e.target.checked;
-                if (isRunning) {
-                    generateNewSet();
-                }
-            });
-            document.getElementById('useFlats').addEventListener('change', (e) => {
-                useFlats = e.target.checked;
-                if (isRunning) {
-                    generateNewSet();
-                }
-            });
-
-            // Set up only accidentals checkbox
-            document.getElementById('onlyAccidentals').addEventListener('change', (e) => {
-                onlyAccidentals = e.target.checked;
-                if (isRunning) {
-                    generateNewSet();
-                }
-            });
-
-            // Set up MIDI selector button
-            document.getElementById('useSelectedBtn').addEventListener('click', () => {
-                const select = document.getElementById('midiSelect');
-                const selectedId = select.value;
-                if (selectedId && midiAccess) {
-                    inputPort = midiAccess.inputs.get(selectedId);
-                    if (inputPort) {
-                        console.log('Selected input:', inputPort.name); // Debug
-                        inputPort.onmidimessage = onMIDIMessage;
-                        document.getElementById('status').textContent = `MIDI Connected via "${inputPort.name || 'Unknown'}! Generating set...`;
-                        document.getElementById('connectBtn').textContent = 'Reconnect MIDI';
-                        // Reset and start
-                        wrongCounts.clear();
-                        totalWrongsPerNote.clear();
-                        noteDisplays.clear();
-                        noteCorrects.clear();
-                        totalCorrect = 0;
-                        totalWrongs = 0;
-                        noteCount = 0;
-                        totalTime = 0;
-                        lastPitch = null;
-                        currentError = false;
-                        pendingAdvance = false;
-                        isRunning = true;
-                        updateLedger();
-                        updateStats();
-                        updateTimer();
-                        updateNoteNameDisplay();
-                        generateNewSet();
-                        // Hide selector
-                        document.getElementById('midiSelector').style.display = 'none';
-                    } else {
-                        document.getElementById('status').textContent = 'Invalid selection.';
-                    }
-                }
-            });
-
-            document.getElementById('status').textContent = 'Ready. Click "Connect MIDI" to begin. (Open Console for debug logs)';
-            document.getElementById('connectBtn').style.display = 'block';
-        });
-
-        // Function to get note info from MIDI pitch with sharp/flat based on settings
-        function getNoteInfo(pitch) {
-            const octave = Math.floor(pitch / 12) - 1;
-            const semitone = pitch % 12;
-
-            let base, accidental = null, displayName;
-
-            // Natural notes
-            const naturalSemis = [0, 2, 4, 5, 7, 9, 11];
-            const naturalBases = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
-
-            if (naturalSemis.includes(semitone)) {
-                const idx = naturalSemis.indexOf(semitone);
-                base = naturalBases[idx];
-                displayName = base.toUpperCase() + '/' + octave;
-            } else {
-                // Chromatic (black keys) - sharp/flat based on settings
-                const blackKeys = {
-                    1: {sharp: {base: 'c', acc: '#', display: 'c#'}, flat: {base: 'd', acc: 'b', display: 'db'}},
-                    3: {sharp: {base: 'd', acc: '#', display: 'd#'}, flat: {base: 'e', acc: 'b', display: 'eb'}},
-                    6: {sharp: {base: 'f', acc: '#', display: 'f#'}, flat: {base: 'g', acc: 'b', display: 'gb'}},
-                    8: {sharp: {base: 'g', acc: '#', display: 'g#'}, flat: {base: 'a', acc: 'b', display: 'ab'}},
-                    10: {sharp: {base: 'a', acc: '#', display: 'a#'}, flat: {base: 'b', acc: 'b', display: 'bb'}}
-                };
-                let choice;
-                if (useSharps && useFlats) {
-                    choice = Math.random() < 0.5 ? 'sharp' : 'flat';
-                } else if (useSharps) {
-                    choice = 'sharp';
-                } else if (useFlats) {
-                    choice = 'flat';
-                } else {
-                    // Fallback, shouldn't occur
-                    choice = 'sharp';
-                }
-                const selected = blackKeys[semitone][choice];
-                base = selected.base;
-                accidental = selected.acc;
-                displayName = base.toUpperCase() + accidental + '/' + octave;
-            }
-
-            const baseKey = base + '/' + octave;
-            return {baseKey, accidental, displayName};
-        }
-
-        // Function to draw the staff and all notes in current set on a continuous line, highlighting current, dimming played
-        function drawSet() {
-            if (!VF || currentSet.length === 0) {
-                console.error('VF or set not ready.');
-                return;
-            }
-            const staffDiv = document.getElementById('staff');
-            staffDiv.innerHTML = ''; // Clear previous
-            // Clear any flash classes
-            const container = document.getElementById('staffContainer');
-            container.classList.remove('correct-flash', 'wrong-flash');
-
-            const renderer = new VF.Renderer(staffDiv, VF.Renderer.Backends.SVG);
-            const noteWidth = 40;
-            const totalWidth = setSize * noteWidth + 350; // Increased extra padding for the end to fully cover the last note
-            const fullWidth = totalWidth + 150; // Full width for continuous staff with margin
-            renderer.resize(fullWidth, 300);
-            const context = renderer.getContext();
-            context.setBackgroundFillStyle('#eed');
-
-            // Set widths
-            staffDiv.style.width = fullWidth + 'px';
-            document.getElementById('noteStripe').style.width = fullWidth + 'px';
-
-            // Single continuous stave for all notes
-            const stave = new VF.Stave(10, 40, totalWidth);
-            stave.addClef('treble').addTimeSignature('4/4');
-            stave.setContext(context).draw();
-
-            const notes = []; // All notes
-            currentSet.forEach((setItem, idx) => {
-                const noteInfo = setItem.noteInfo; // Use pre-computed, fixed notation
-                const note = new VF.StaveNote({
-                    clef: 'treble',
-                    keys: [noteInfo.baseKey],
-                    duration: 'q'
-                });
-                if (noteInfo.accidental) {
-                    note.addAccidental(0, new VF.Accidental(noteInfo.accidental));
-                }
-                // Style: played correct (green), current (black or red if error, green if pending advance), future (grey)
-                if (idx < currentIndex) {
-                    // Played correct: green
-                    note.setStyle({ fillStyle: '#00ff00', strokeStyle: '#00ff00' });
-                } else if (idx === currentIndex) {
-                    // Current: black normally, red if error, green if pending advance
-                    if (pendingAdvance) {
-                        note.setStyle({ fillStyle: '#00ff00', strokeStyle: '#00ff00' });
-                    } else if (currentError) {
-                        note.setStyle({ fillStyle: '#ff0000', strokeStyle: '#ff0000' });
-                    } else {
-                        note.setStyle({ fillStyle: '#000000', strokeStyle: '#000000' });
-                    }
-                } else {
-                    // Future: grey
-                    note.setStyle({ fillStyle: '#808080', strokeStyle: '#808080' });
-                }
-                notes.push(note);
-            });
-
-            // Single voice for all
-            const voice = new VF.Voice({ num_beats: setSize, beat_value: 4 });
-            notes.forEach(n => voice.addTickable(n));
-            new VF.Formatter().joinVoices([voice]).format([voice], totalWidth);
-            voice.draw(context, stave);
-        }
-
-        // Function to flash the staff
-        function flashStaff(correct) {
-            const staffContainer = document.getElementById('staffContainer');
-            const className = correct ? 'correct-flash' : 'wrong-flash';
-            staffContainer.classList.add(className);
-            setTimeout(() => {
-                staffContainer.classList.remove(className);
-            }, 300);
-        }
-
-        // Handle note-off for advancing after correct
-        function handleNoteOff(pitch) {
-            if (pendingAdvance && currentSet.length > 0 && pitch === currentSet[currentIndex].pitch) {
-                pendingAdvance = false;
-                currentIndex++; // Advance to next
-                currentError = false;
-                drawSet(); // Update display (previous now green, next highlighted)
-                updateNoteNameDisplay();
-                if (currentIndex < setSize) {
-                    playNote(currentSet[currentIndex].pitch, 0.8, waveform);
-                    currentStartTime = Date.now(); // Reset timer for next
-                } else {
-                    setTimeout(generateNewSet, 500); // New set after brief pause
-                }
-                console.log('Note released, advancing to next index:', currentIndex);
-            }
-        }
-
-        // Function to update the wrong notes ledger display
-        function updateLedger() {
-            const ledgerDiv = document.getElementById('ledger');
-            if (totalWrongsPerNote.size === 0) {
-                ledgerDiv.innerHTML = '';
-                return;
-            }
-            // Sort by count descending, then pitch
-            const sortedWrongs = Array.from(totalWrongsPerNote.entries())
-                .map(([pitch, count]) => {
-                    const noteInfo = getNoteInfo(pitch);
-                    const noteName = noteInfo.displayName.replace(/\/\d+$/, '');
-                    return {noteName, pitch, count};
-                })
-                .sort((a, b) => b.count - a.count || a.pitch - b.pitch);
-            ledgerDiv.innerHTML = '<strong>Notes Missed:</strong> ' + 
-                sortedWrongs.map(entry => 
-                    `<span class="wrong-entry">${entry.noteName} ${entry.pitch} missed ${entry.count}x</span>`
-                ).join(' | ');
-        }
-
-        // Function to update stats display
-        function updateStats() {
-            const totalPlayed = totalCorrect + totalWrongs;
-            const percentage = totalPlayed > 0 ? Math.round((totalWrongs / totalPlayed) * 100) : 0;
-            document.getElementById('stats').textContent = `Notes Played: ${totalPlayed} | Wrongs: ${totalWrongs} (${percentage}%)`;
-        }
-
-        // Function to update timer display
-        function updateTimer() {
-            const avgTime = noteCount > 0 ? (totalTime / noteCount / 1000).toFixed(2) : '0.00';
-            document.getElementById('timer').textContent = `Avg Time per Note: ${avgTime} seconds`;
-        }
-
-        // Generate new set of notes with limited jumps, biased towards error-prone notes
-        function generateNewSet() {
-            currentSet = [];
-            const naturalSemis = [0, 2, 4, 5, 7, 9, 11];
-            const accidentalSemis = [1, 3, 6, 8, 10];
-            let allowedSemis;
-            if (onlyAccidentals) {
-                allowedSemis = (useSharps || useFlats) ? accidentalSemis : [];
-            } else {
-                allowedSemis = naturalSemis.slice();
-                if (useSharps || useFlats) {
-                    allowedSemis = allowedSemis.concat(accidentalSemis);
-                }
-            }
-            let allowedPitches = [];
-            for (let p = minPitch; p <= maxPitch; p++) {
-                if (allowedSemis.includes(p % 12)) {
-                    allowedPitches.push(p);
-                }
-            }
-            if (allowedPitches.length === 0) {
-                console.error('No allowed pitches! Check your settings (e.g., Only Accidentals requires Sharps or Flats enabled).');
-                document.getElementById('status').textContent = 'No valid notes available with current settings. Adjust and regenerate.';
-                return;
-            }
-            // Select first pitch with bias
-            let firstPitch;
-            if (allowedPitches.length === 1) {
-                firstPitch = allowedPitches[0];
-            } else {
-                const weights = allowedPitches.map(p => 1 + (wrongCounts.get(p)?.count || 0) * BIAS_FACTOR);
-                do {
-                    firstPitch = weightedRandom(allowedPitches, weights);
-                } while (firstPitch === lastPitch && allowedPitches.length > 1);
-            }
-            lastPitch = firstPitch;
-            let noteInfo = getNoteInfo(firstPitch);
-            currentSet.push({pitch: firstPitch, noteInfo});
-            // Generate subsequent pitches with limited jumps and bias
-            for (let i = 1; i < setSize; i++) {
-                let possible = [];
-                for (let step = 1; step <= maxJump; step++) {
-                    let up = lastPitch + step;
-                    if (up <= maxPitch && allowedSemis.includes(up % 12)) {
-                        possible.push({pitch: up, step: step});
-                    }
-                    let down = lastPitch - step;
-                    if (down >= minPitch && allowedSemis.includes(down % 12)) {
-                        possible.push({pitch: down, step: step});
-                    }
-                }
-                let newPitch;
-                if (possible.length === 0) {
-                    // Fallback to random allowed pitch != last
-                    const candidates = allowedPitches.filter(p => p !== lastPitch);
-                    if (candidates.length === 0) {
-                        newPitch = lastPitch; // Unavoidable repeat
-                    } else {
-                        const weights = candidates.map(p => 1 + (wrongCounts.get(p)?.count || 0) * BIAS_FACTOR);
-                        newPitch = weightedRandom(candidates, weights);
-                    }
-                } else {
-                    const weights = possible.map(item => item.step + (wrongCounts.get(item.pitch)?.count || 0) * BIAS_FACTOR);
-                    const selected = weightedRandom(possible, weights);
-                    newPitch = selected.pitch;
-                }
-                noteInfo = getNoteInfo(newPitch);
-                currentSet.push({pitch: newPitch, noteInfo});
-                lastPitch = newPitch;
-            }
-            // Increment display counts
-            currentSet.forEach(item => {
-                const count = noteDisplays.get(item.pitch) || 0;
-                noteDisplays.set(item.pitch, count + 1);
-            });
-            currentIndex = 0;
-            currentError = false;
-            pendingAdvance = false;
-            drawSet();
-            updateNoteNameDisplay();
-            if (currentSet.length > 0) {
-                playNote(currentSet[0].pitch, 0.8, waveform);
-            }
-            currentStartTime = Date.now(); // Start timer for first note
-            console.log('New set:', currentSet.map(item => item.noteInfo.displayName));
-        }
-
-        // Handle correct note-on (recognition and timing, but advance on off)
-        function handleCorrectPress(pitch) {
-            const timeTaken = Date.now() - currentStartTime; // Time for this note (to press)
-            totalTime += timeTaken;
-            noteCount++;
-            totalCorrect++;
-            // Increment correct plays
-            const corrCount = noteCorrects.get(pitch) || 0;
-            noteCorrects.set(pitch, corrCount + 1);
-            // Decrement bias count if exists
-            let biasEntry = wrongCounts.get(pitch);
-            if (biasEntry && biasEntry.count > 0) {
-                biasEntry.count--;
-                if (biasEntry.count === 0) {
-                    wrongCounts.delete(pitch);
-                }
-            }
-            pendingAdvance = true;
-            currentError = false;
-            flashStaff(true);
-            updateStats();
-            updateTimer();
-            drawSet(); // Show green for pending
-            updateNoteNameDisplay();
-            console.log('Correct note pressed, waiting for release...');
-        }
-
-        // Handle wrong note-on
-        function handleWrong(targetPitch, playedPitch) {
-            totalWrongs++;
-            // Increment total wrongs for target
-            totalWrongsPerNote.set(targetPitch, (totalWrongsPerNote.get(targetPitch) || 0) + 1);
-            // Increment bias count for target
-            let biasEntry = wrongCounts.get(targetPitch);
-            if (!biasEntry) {
-                const noteInfo = getNoteInfo(targetPitch);
-                biasEntry = {
-                    pitch: targetPitch,
-                    count: 0,
-                    noteName: noteInfo.displayName.replace(/\/\d+$/, '')
-                };
-                wrongCounts.set(targetPitch, biasEntry);
-            }
-            biasEntry.count++;
-            currentError = true;
-            drawSet(); // Show red on current note
-            updateLedger(); // Refresh display
-            updateStats();
-            // Optionally reset timer for retry
-            // currentStartTime = Date.now();
-            flashStaff(false);
-            console.log('Wrong note played, retrying...');
-            setTimeout(() => {
-                currentError = false;
-                drawSet(); // Back to black
-                updateNoteNameDisplay();
-            }, 300);
-        }
-
-        // MIDI message handler
-        function onMIDIMessage(event) {
-            const data = event.data;
-            console.log('Incoming MIDI data:', data); // Debug: See all messages
-            const statusByte = data[0];
-            const status = statusByte & 0xF0; // Message type
-            const pitch = data[1];
-            if (status === 0x90) { // Note On
-                const velocity = data[2];
-                if (velocity > 0 && currentSet.length > 0) {
-                    console.log('Note On detected: Pitch', pitch, 'Velocity', velocity); // Debug
-                    const targetPitch = currentSet[currentIndex].pitch;
-                    if (pitch === targetPitch) {
-                        console.log('Match! Waiting for release...'); // Debug
-                        playNote(pitch, 0.3, waveform, 0.2); // Echo softly
-                        handleCorrectPress(targetPitch);
-                    } else {
-                        console.log('No match - expected', targetPitch); // Debug
-                        playNote(pitch, 0.3, waveform, 0.2); // Echo softly
-                        handleWrong(targetPitch, pitch);
-                    }
-                } else if (velocity === 0) {
-                    // Note On with vel=0 acts as Note Off
-                    handleNoteOff(pitch);
-                }
-            } else if (status === 0x80) { // Note Off
-                handleNoteOff(pitch);
-            }
-            // Ignore other messages
-        }
-
-        // MIDI success callback - populates selector
-        function onMIDISuccess(midi) {
-            if (!VF) {
-                document.getElementById('status').textContent = 'VexFlow not ready. Wait or reload.';
-                return;
-            }
-            midiAccess = midi;
-            const inputs = Array.from(midi.inputs.values());
-            console.log('Available MIDI inputs:', inputs.map(i => ({name: i.name, id: i.id}))); // Debug
-
-            if (inputs.length === 0) {
-                document.getElementById('status').textContent = 'No MIDI inputs found. Connect a device.';
-                return;
-            }
-
-            // Populate selector
-            const select = document.getElementById('midiSelect');
-            select.innerHTML = ''; // Clear
-            inputs.forEach((input, index) => {
-                const option = document.createElement('option');
-                option.value = input.id; // Use id for unique key
-                option.textContent = input.name || `MIDI Input ${index + 1}`;
-                select.appendChild(option);
-            });
-
-            // Show selector, hide connect
-            document.getElementById('midiSelector').style.display = 'block';
-            document.getElementById('connectBtn').style.display = 'none';
-            document.getElementById('status').textContent = 'MIDI devices detected. Select one below.';
-        }
-
-        // MIDI failure callback
-        function onMIDIFailure(error) {
-            console.error('MIDI Error:', error);
-            document.getElementById('status').textContent = 'MIDI access denied or unavailable. Try in Chrome/Edge.';
-        }
-
-        // Connect button handler - now handles reconnect too
-        document.getElementById('connectBtn').addEventListener('click', () => {
-            if (navigator.requestMIDIAccess) {
-                navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
-            } else {
-                alert('Web MIDI not supported in this browser.');
-            }
+            pageFlip.loadFromHTML(document.querySelectorAll('.page'));
+            
+            document.getElementById('prev').onclick = () => pageFlip.flipPrev();
+            document.getElementById('next').onclick = () => pageFlip.flipNext();
         });
     </script>
 </body>
