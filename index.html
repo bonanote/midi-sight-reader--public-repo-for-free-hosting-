@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MIDI Sight Reader – Custom Edition v4.0</title>
+<title>MIDI Sight Reader – Custom Edition v4.0 (FIXED)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vexflow/3.0.9/vexflow-min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
 <style>
     :root {
         --body-bg: #0a0e14;
@@ -18,7 +17,8 @@
     }
 
     body {
-        font-family: 'Exo 2', sans-serif;
+        /* Use a generic font for stability */
+        font-family: Arial, Helvetica, sans-serif; 
         background: var(--body-bg);
         background-image: radial-gradient(circle at 50% 0%, #1a2a40 0%, #0a0e14 80%);
         color: #cceeff;
@@ -32,17 +32,21 @@
 
     .rack-unit {
         width: 100%;
-        max-width: 1150px;
+        /* Force max-width to fill the available space and center it */
+        max-width: 1150px; 
         background: var(--rack-gradient);
         border-radius: 20px;
         box-shadow: 0 0 0 2px #3a5a8a, 0 20px 60px rgba(0,0,0,0.9);
         padding: 15px; 
         position: relative;
         border: 1px solid #162236;
+        /* Ensure centering in the window */
+        margin: auto; 
     }
 
     h1 {
-        font-family: 'Orbitron', sans-serif;
+        /* Use Monospace for 'Orbitron' look */
+        font-family: 'Courier New', Courier, monospace;
         text-transform: uppercase;
         letter-spacing: 3px;
         color: #fff;
@@ -72,7 +76,8 @@
     
     #stats, #timer { 
         color: var(--neon-cyan); 
-        font-family: 'Orbitron', sans-serif; 
+        /* Use Monospace for 'Orbitron' look */
+        font-family: 'Courier New', Courier, monospace;
         font-size: 18px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -102,14 +107,16 @@
         color: var(--neon-cyan);
         border: 1px solid #3a5a8a;
         padding: 6px;
-        font-family: 'Orbitron', sans-serif;
+        /* Use Monospace for 'Orbitron' look */
+        font-family: 'Courier New', Courier, monospace;
         font-size: 14px;
         width: 100%;
         text-align: center;
         border-radius: 15px;
         outline: none;
     }
-    input[type="text"] { text-align: left; padding-left: 10px; font-family: 'Exo 2', sans-serif; font-weight: 600; color: #fff;}
+    /* Use regular font for text input (Exo 2 look) */
+    input[type="text"] { text-align: left; padding-left: 10px; font-family: Arial, Helvetica, sans-serif; font-weight: 600; color: #fff;}
 
     input[type="checkbox"] {
         appearance: none;
@@ -146,7 +153,8 @@
     #noteStripe { height: 35px; position: relative; }
 
     #noteNameDisplay {
-        font-family: 'Orbitron', sans-serif;
+        /* Use Monospace for 'Orbitron' look */
+        font-family: 'Courier New', Courier, monospace;
         font-size: 20px;
         font-weight: bold;
         color: #000;
@@ -172,7 +180,8 @@
         border: none;
         border-radius: 30px;
         cursor: pointer;
-        font-family: 'Orbitron', sans-serif;
+        /* Use Monospace for 'Orbitron' look */
+        font-family: 'Courier New', Courier, monospace;
         font-weight: 600;
         font-size: 13px;
         text-transform: uppercase;
@@ -193,7 +202,7 @@
         border: 1px solid #3a5a8a;
         border-radius: var(--radius-sm);
         color: #8ecae6;
-        font-family: 'Exo 2', sans-serif;
+        font-family: Arial, Helvetica, sans-serif;
         font-weight: 600;
         font-size: 14px;
         line-height: 1.4;
@@ -594,7 +603,7 @@ function playNote(p,dur=0.5,type='sine',vol=0.3){
 }
 
 function playClick(){
-    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioCtx)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const o=audioCtx.createOscillator(), g=audioCtx.createGain();
     o.type='square'; o.frequency.value=1200;
