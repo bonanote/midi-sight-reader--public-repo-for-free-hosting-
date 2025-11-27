@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <title>MIDI Sight Reader – Custom Edition v4.0 (FIXED)</title>
+<!-- Reverting to original VexFlow link, only functional JS changes applied. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vexflow/3.0.9/vexflow-min.js"></script>
+<!-- REMOVED EXTERNAL FONT LINK (Google Fonts) to guarantee UI stability -->
 <style>
     :root {
         --body-bg: #0a0e14;
@@ -17,8 +19,8 @@
     }
 
     body {
-        /* Use a generic font for stability */
-        font-family: Arial, Helvetica, sans-serif; 
+        /* Use standard system font for stability (Replaces 'Exo 2') */
+        font-family: Arial, Helvetica, sans-serif;
         background: var(--body-bg);
         background-image: radial-gradient(circle at 50% 0%, #1a2a40 0%, #0a0e14 80%);
         color: #cceeff;
@@ -32,16 +34,15 @@
 
     .rack-unit {
         width: 100%;
-        /* Force max-width to fill the available space and center it */
-        max-width: 1150px; 
+        max-width: 1150px;
+        /* Center the application unit */
+        margin: auto; 
         background: var(--rack-gradient);
         border-radius: 20px;
         box-shadow: 0 0 0 2px #3a5a8a, 0 20px 60px rgba(0,0,0,0.9);
         padding: 15px; 
         position: relative;
         border: 1px solid #162236;
-        /* Ensure centering in the window */
-        margin: auto; 
     }
 
     h1 {
@@ -115,8 +116,12 @@
         border-radius: 15px;
         outline: none;
     }
-    /* Use regular font for text input (Exo 2 look) */
-    input[type="text"] { text-align: left; padding-left: 10px; font-family: Arial, Helvetica, sans-serif; font-weight: 600; color: #fff;}
+    input[type="text"] { 
+        text-align: left; padding-left: 10px; 
+        /* Use standard system font (Replaces 'Exo 2') */
+        font-family: Arial, Helvetica, sans-serif; 
+        font-weight: 600; color: #fff;
+    }
 
     input[type="checkbox"] {
         appearance: none;
@@ -202,6 +207,7 @@
         border: 1px solid #3a5a8a;
         border-radius: var(--radius-sm);
         color: #8ecae6;
+        /* Use standard system font (Replaces 'Exo 2') */
         font-family: Arial, Helvetica, sans-serif;
         font-weight: 600;
         font-size: 14px;
@@ -296,7 +302,7 @@
         <button id="connectBtn">Initialize MIDI</button>
         <button id="showSessionStats">View Logs</button>
         <button id="resetSessionBtn">System Reset</button>
-    </div>
+      </div>
 
     <div id="ledger"></div>
     <div id="sessionDisplay"></div>
@@ -603,7 +609,7 @@ function playNote(p,dur=0.5,type='sine',vol=0.3){
 }
 
 function playClick(){
-    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioCtx)();
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const o=audioCtx.createOscillator(), g=audioCtx.createGain();
     o.type='square'; o.frequency.value=1200;
