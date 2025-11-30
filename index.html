@@ -687,7 +687,7 @@ function updateTimer(){ const avg=noteCount?(totalTime/noteCount/1000).toFixed(2
 }
 function updateLedger(){
     const d=document.getElementById('ledger'); if(!totalWrongsPerNote.size) return d.innerHTML='';
-    const sorted=[...totalWrongsPerNote.entries()].map(([p,c])=>({p,c,n:getNoteInfo(p).displayName.replace(/\/\d+$/,'')}))
+    const sorted=[...totalWrongsPerNote.entries()].map(([p,c])=>({p,c,n:getNoteInfo(p).displayName.replace('/','')}))
         .sort((a,b)=>b.c-a.c||a.p-b.p);
     d.innerHTML='<strong>MISSED NOTES:</strong> '+sorted.map(o=>`<span class="wrong-entry">${o.n} (${o.c})</span>`).join(' | ');
 }
