@@ -398,7 +398,7 @@ function drawSet(tempErrorIndex = -1){
             if(missedIndices.has(i)) {
                 n.setStyle({fillStyle:'#ff0055',strokeStyle:'#ff0055'});
             } else {
-                n.setStyle({fillStyle:'#005577',strokeStyle:'#005577'}); 
+                n.setStyle({fillStyle:'#0044cc',strokeStyle:'#0044cc'}); 
             }
         } else if(i === currentIndex){
             if(pendingAdvance) {
@@ -406,10 +406,10 @@ function drawSet(tempErrorIndex = -1){
             } else if(tempErrorIndex === i) {
                 n.setStyle({fillStyle:'#ff0055',strokeStyle:'#ff0055'});
             } else {
-                n.setStyle({fillStyle:'#00f2ff',strokeStyle:'#00f2ff'});
+                n.setStyle({fillStyle:'#000000',strokeStyle:'#000000'});
             }
         } else {
-            n.setStyle({fillStyle:'#556677',strokeStyle:'#556677'}); 
+            n.setStyle({fillStyle:'#0044cc',strokeStyle:'#0044cc'}); 
         }
         return n;
     });
